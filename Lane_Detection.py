@@ -96,7 +96,7 @@ def process(image):
         (width / 3, height / 1.7),
         (2 * width / 3, height / 1.7),
         (width, height)]
-
+    # print("dd", image.shape)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Green H 0.33  -->60    , S 1-->255 , V 1--> 255
     # cv2.imshow("Image", image)
     hsv_image = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2HSV)  # Red   H 0     -->0     , S 1-->255 , V 1--> 255
@@ -113,15 +113,18 @@ def process(image):
 
     mask2 = cv2.inRange(hsv_image, lower_color2, upper_color2)
     result2 = cv2.bitwise_and(image, image, mask=mask2)
-
+    # cv2.imshow("yellow color detection", result1)
+    # cv2.imshow("white color detection", result2)
     # result3 = cv2.bitwise_or(result1, result2)
 
     gray_image1 = cv2.cvtColor(result1, cv2.COLOR_RGB2GRAY)
     canny_image1 = cv2.Canny(gray_image1, 100, 120)
-    # cv2.imshow("Canny", canny_image)
+    # cv2.imshow("Gray image of yellow color detection", gray_image1)
+    # cv2.imshow("Canny image of yellow color detection", canny_image1)
     cropped_image1 = region_of_interest(canny_image1,
                                         np.array([region_of_interest_vertices], np.int32), )
     # cv2.imshow("Cropped", cropped_image1)
+    # cv2.imshow("Canny", canny_image)
     line1 = cv2.HoughLinesP(cropped_image1,
                             rho=2,
                             theta=np.pi / 180,
@@ -135,7 +138,10 @@ def process(image):
     # cv2.imshow("Canny", canny_image)
     cropped_image2 = region_of_interest(canny_image2,
                                         np.array([region_of_interest_vertices], np.int32), )
-    # cv2.imshow("Cropped2", cropped_image2)
+    # cv2.imshow("Gray image of white color detection", gray_image2)
+    # cv2.imshow("Canny image of white color detection", canny_image2)
+    # Cropped = cv2.bitwise_or(cropped_image1, cropped_image2)
+    # cv2.imshow("Cropped section of the main image", Cropped)
     line2 = cv2.HoughLinesP(cropped_image2,
                             rho=2,
                             theta=np.pi / 180,
@@ -154,7 +160,7 @@ def process(image):
 
 
 while 1:
-    str1 = input('Enter P for "Photo detection" or V for "Video detection" or X to exit')
+    str1 = input('Enter P for "Photo detection" or V for "Video detection" or X to exit\n')
     if str1 == 'P' or str1 == 'p':
         image = cv2.imread('Project_data/test_images/straight_lines1.jpg')
         frame = process(image)
@@ -162,13 +168,24 @@ while 1:
         cv2.waitKey(0)
     elif str1 == 'V' or str1 == 'v':
         cap = cv2.VideoCapture('Project_data/project_video.mp4')
+        str2 = input('Do you want to record the output video, "Y" for yes or "N" for No ?\n')
+        if str2 == 'Y' or str2 == 'y':
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            out = cv2.VideoWriter('Lane Detection.mp4', fourcc, 30.0, (1280, 720))
         while cap.isOpened():
             success, frame = cap.read()
-            frame = process(frame)
-            cv2.imshow('Lane Detection of Video', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):  # press "q" while the detection is running to close it
+            if success:
+                frame = process(frame)
+                if str2 == 'Y' or str2 == 'y':
+                    out.write(frame)
+                cv2.imshow('Lane Detection of Video', frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):  # press "q" while the detection is running to close it
+                    break
+            else:
                 break
         cap.release()
+        if str2 == 'Y' or str2 == 'y':
+            out.release()
         cv2.destroyAllWindows()
     elif str1 == 'X' or str1 == 'x':
         break
